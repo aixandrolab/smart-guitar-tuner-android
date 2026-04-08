@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2026, Alexander Suvorov. All rights reserved. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_dark">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/surface_dark"
+        app:title="Audio Recording"
+        app:titleTextColor="@color/text_primary"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="@color/text_primary" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/waveformCard"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:layout_marginBottom="32dp"
+            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/surface_dark"
+            app:cardElevation="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <View
+                    android:id="@+id/recordingIndicator"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:background="@drawable/ic_recording_dot"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/timerText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="64sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/purple_500"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/statusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ready to record"
+                    android:textSize="18sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginTop="16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"
+                    android:layout_marginTop="24dp"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="25dp"
+                        android:layout_margin="3dp"
+                        android:background="@color/purple_500" />
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="40dp"
+                        android:layout_margin="3dp"
+                        android:background="@color/purple_500" />
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="20dp"
+                        android:layout_margin="3dp"
+                        android:background="@color/purple_500" />
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="55dp"
+                        android:layout_margin="3dp"
+                        android:background="@color/purple_500" />
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="30dp"
+                        android:layout_margin="3dp"
+                        android:background="@color/purple_500" />
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="60dp"
+                        android:layout_margin="3dp"
+                        android:background="@color/purple_500" />
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="35dp"
+                        android:layout_margin="3dp"
+                        android:background="@color/purple_500" />
+
+                    <View
+                        android:layout_width="5dp"
+                        android:layout_height="25dp"
+                        android:layout_margin="3dp"
+                        android:background="@color/purple_500" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <Button
+            android:id="@+id/btnStartRecord"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Start Recording"
+            android:textSize="18sp"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/action_success" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="6 seconds will be recorded"
+            android:textSize="12sp"
+            android:textColor="@color/text_hint"
+            android:layout_gravity="center" />
+
+    </LinearLayout>
+
+</LinearLayout>

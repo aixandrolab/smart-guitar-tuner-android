@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2026, Alexander Suvorov. All rights reserved. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:boxBackgroundColor="@color/surface_dark"
+        app:boxStrokeColor="@color/purple_500"
+        app:hintTextColor="@color/purple_500">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etNewTuningName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Tuning name"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

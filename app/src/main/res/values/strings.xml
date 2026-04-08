@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2026, Alexander Suvorov. All rights reserved. -->
+<resources>
+    <string name="app_name">Smart Guitar Tuner</string>
+
+    <string name="add_button">Add</string>
+    <string name="delete_button">Delete</string>
+    <string name="settings_title">Settings:</string>
+
+    <string name="string_tuner_title">String Tuning - %s</string>
+
+    <string name="note_label">Note:</string>
+    <string name="frequency_label">Frequency:</string>
+    <string name="record_button">Record</string>
+    <string name="play_button">Play</string>
+    <string name="rerecord_button">Re-record</string>
+
+    <string name="recording_title">Audio Recording</string>
+    <string name="start_recording">Start Recording</string>
+    <string name="recording_info">6 seconds will be recorded</string>
+    <string name="get_ready">Get ready...</string>
+    <string name="attention">Attention...</string>
+    <string name="start">Start!</string>
+    <string name="recording_in_progress">Recording... %d/6 sec</string>
+    <string name="recording_complete">Recording complete!</string>
+    <string name="prepare">Preparing...</string>
+
+    <string name="audio_player_demo">Audio Player Demo</string>
+    <string name="random_sound">Random sound</string>
+    <string name="close">Close</string>
+
+    <string name="add_tuning_title">Add Tuning</string>
+    <string name="tuning_name_hint">Tuning name</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+
+    <string name="delete_settings_title">Delete Settings</string>
+    <string name="delete_settings_message">Select settings to delete (Default cannot be deleted)</string>
+    <string name="delete">Delete</string>
+    <string name="settings_added">Settings added</string>
+    <string name="settings_deleted">Settings deleted: %d</string>
+    <string name="no_settings_selected">No settings selected for deletion or cannot delete Default</string>
+    <string name="tuning_exists">Tuning with this name already exists</string>
+    <string name="enter_tuning_name">Enter tuning name</string>
+    <string name="permission_needed">Record audio permission needed</string>
+    <string name="permission_granted">Recording permission granted</string>
+    <string name="recording_error">Recording error: %s</string>
+    <string name="file_saved">Recording saved (%d KB, pure sound)</string>
+    <string name="file_not_saved">Failed to save audio</string>
+    <string name="playback_complete">Playback complete</string>
+    <string name="file_not_found">Audio file not found. Please record sound for this string first</string>
+    <string name="default_tuning">Default</string>
+    <string name="record_disabled">Recording disabled for default tuning</string>
+    <string name="default_sound_playing">Default sound will be played from assets</string>
+</resources>
