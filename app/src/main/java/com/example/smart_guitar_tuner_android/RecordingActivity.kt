@@ -7,10 +7,12 @@ import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -51,6 +53,7 @@ class RecordingActivity : AppCompatActivity() {
         private const val SAMPLE_RATE = 44100
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
+        private const val TAG = "RecordingActivity"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -162,7 +165,18 @@ class RecordingActivity : AppCompatActivity() {
             setupAudioRecord()
             setupOutputFiles()
 
+            if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
+                throw IOException("AudioRecord not initialized properly")
+            }
+
             audioRecord?.startRecording()
+
+            Thread.sleep(50)
+
+            if (audioRecord?.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
+                throw IOException("Failed to start recording")
+            }
+
             isRecording = true
             recordingSeconds = 0
             statusText.text = "Recording... 0/6 sec"
@@ -187,6 +201,7 @@ class RecordingActivity : AppCompatActivity() {
             })
 
         } catch (e: Exception) {
+            Log.e(TAG, "Error starting recording", e)
             e.printStackTrace()
             Toast.makeText(this, "Recording error: ${e.message}", Toast.LENGTH_SHORT).show()
             finishRecording()
@@ -195,13 +210,24 @@ class RecordingActivity : AppCompatActivity() {
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     private fun setupAudioRecord() {
-        val bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
+        var bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
+
         if (bufferSize == AudioRecord.ERROR_BAD_VALUE || bufferSize == AudioRecord.ERROR) {
             throw IOException("Invalid audio parameters")
         }
 
+        bufferSize *= 4
+
+        Log.d(TAG, "Buffer size: $bufferSize bytes")
+
+        val audioSource = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            MediaRecorder.AudioSource.UNPROCESSED
+        } else {
+            MediaRecorder.AudioSource.MIC
+        }
+
         audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.VOICE_RECOGNITION,
+            audioSource,
             SAMPLE_RATE,
             CHANNEL_CONFIG,
             AUDIO_FORMAT,
@@ -211,6 +237,8 @@ class RecordingActivity : AppCompatActivity() {
         if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
             throw IOException("Failed to initialize AudioRecord")
         }
+
+        Log.d(TAG, "AudioRecord initialized successfully")
     }
 
     private fun setupOutputFiles() {
@@ -219,32 +247,85 @@ class RecordingActivity : AppCompatActivity() {
 
         pcmFile = File(settingsDir, "string_${stringIndex + 1}.pcm").apply { if (exists()) delete() }
         wavFile = File(settingsDir, "string_${stringIndex + 1}.wav").apply { if (exists()) delete() }
+
+        Log.d(TAG, "Output files: ${pcmFile?.absolutePath}, ${wavFile?.absolutePath}")
     }
 
     private fun writeAudioDataToFile() {
         val bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
-        val audioData = ShortArray(bufferSize / 2)
-        val buffer = ByteArray(bufferSize)
+        if (bufferSize <= 0) {
+            Log.e(TAG, "Invalid buffer size: $bufferSize")
+            return
+        }
+
+        val readBufferSize = bufferSize * 4
+        val audioData = ShortArray(readBufferSize / 2)
+        val buffer = ByteArray(readBufferSize)
+
+        Log.d(TAG, "Read buffer size: $readBufferSize bytes, ShortArray size: ${audioData.size}")
 
         FileOutputStream(pcmFile).use { fos ->
             var totalSamples = 0
             val targetSamples = SAMPLE_RATE * 6
+            var errorCount = 0
+            var lastProgressTime = System.currentTimeMillis()
 
-            while (isRecording && totalSamples < targetSamples) {
-                val readSize = audioRecord?.read(audioData, 0, audioData.size) ?: 0
-                if (readSize > 0) {
-                    for (i in 0 until readSize) {
-                        val sample = audioData[i]
-                        buffer[i * 2] = (sample.toInt() and 0xFF).toByte()
-                        buffer[i * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
+            Log.d(TAG, "Starting recording loop, target samples: $targetSamples")
+
+            while (isRecording && totalSamples < targetSamples && errorCount < 5) {
+                val readSize = audioRecord?.read(audioData, 0, audioData.size) ?: -1
+
+                when {
+                    readSize > 0 -> {
+                        for (i in 0 until readSize) {
+                            val sample = audioData[i]
+                            buffer[i * 2] = (sample.toInt() and 0xFF).toByte()
+                            buffer[i * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
+                        }
+                        fos.write(buffer, 0, readSize * 2)
+                        totalSamples += readSize
+                        errorCount = 0
+
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastProgressTime > 1000) {
+                            val secondsRecorded = totalSamples / SAMPLE_RATE
+                            Log.d(TAG, "Recording progress: $secondsRecorded/6 seconds, samples: $totalSamples")
+                            lastProgressTime = currentTime
+                        }
                     }
-                    fos.write(buffer, 0, readSize * 2)
-                    totalSamples += readSize
+                    readSize == AudioRecord.ERROR_INVALID_OPERATION -> {
+                        Log.e(TAG, "AudioRecord.ERROR_INVALID_OPERATION")
+                        errorCount++
+                        Thread.sleep(10)
+                    }
+                    readSize == AudioRecord.ERROR_BAD_VALUE -> {
+                        Log.e(TAG, "AudioRecord.ERROR_BAD_VALUE")
+                        errorCount++
+                        Thread.sleep(10)
+                    }
+                    readSize == AudioRecord.ERROR_DEAD_OBJECT -> {
+                        Log.e(TAG, "AudioRecord.ERROR_DEAD_OBJECT")
+                        errorCount++
+                        Thread.sleep(50)
+                    }
+                    else -> {
+                        if (readSize < 0) {
+                            Log.e(TAG, "Unknown AudioRecord error: $readSize")
+                            errorCount++
+                            Thread.sleep(10)
+                        }
+                    }
                 }
+            }
+
+            val finalSeconds = totalSamples / SAMPLE_RATE
+            Log.d(TAG, "Recording finished. Total samples: $totalSamples, Seconds: $finalSeconds/6, Errors: $errorCount")
+
+            if (totalSamples < targetSamples / 2) {
+                Log.w(TAG, "Recording may be incomplete: only ${totalSamples / SAMPLE_RATE} seconds recorded")
             }
         }
     }
-
 
     private fun updateWaveformLevel() {
         val randomHeight = (80..250).random()
@@ -252,55 +333,86 @@ class RecordingActivity : AppCompatActivity() {
     }
 
     private fun finishRecording() {
+        Log.d(TAG, "Finishing recording...")
         isRecording = false
-        recordingThread?.join(1000)
+
+        try {
+            recordingThread?.join(2000)
+        } catch (e: InterruptedException) {
+            Log.e(TAG, "Interrupted while waiting for recording thread", e)
+        }
+
         audioRecord?.let {
-            if (it.recordingState == AudioRecord.RECORDSTATE_RECORDING) it.stop()
-            it.release()
+            try {
+                if (it.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                    it.stop()
+                }
+                it.release()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error releasing AudioRecord", e)
+            }
         }
         audioRecord = null
         recordingIndicator.visibility = View.GONE
 
         if (pcmFile != null && pcmFile!!.exists() && pcmFile!!.length() > 0) {
-            convertPcmToWav()
-            statusText.text = "Recording complete!"
-            val fileSizeKB = wavFile?.length()?.div(1024) ?: 0
+            val fileSizeBytes = pcmFile!!.length()
+            Log.d(TAG, "PCM file size: $fileSizeBytes bytes")
 
-            val resultIntent = Intent()
-            resultIntent.putExtra("string_index", stringIndex)
-            resultIntent.putExtra("file_saved", true)
-            setResult(RESULT_OK, resultIntent)
+            if (fileSizeBytes > 1024) {
+                convertPcmToWav()
+                statusText.text = "Recording complete!"
+                val fileSizeKB = wavFile?.length()?.div(1024) ?: 0
 
-            Snackbar.make(findViewById(android.R.id.content),
-                "Recording saved (${fileSizeKB} KB, pure sound)", Snackbar.LENGTH_LONG)
-                .setAction("OK") {
-                    resetRecordButton()
-                    finish()
-                }
-                .show()
+                val resultIntent = Intent()
+                resultIntent.putExtra("string_index", stringIndex)
+                resultIntent.putExtra("file_saved", true)
+                setResult(RESULT_OK, resultIntent)
+
+                Snackbar.make(findViewById(android.R.id.content),
+                    "Recording saved (${fileSizeKB} KB, pure sound)", Snackbar.LENGTH_LONG)
+                    .setAction("OK") {
+                        resetRecordButton()
+                        finish()
+                    }
+                    .show()
+            } else {
+                statusText.text = "Recording failed - file too small!"
+                Toast.makeText(this, "Recording file is too small (${fileSizeBytes} bytes)", Toast.LENGTH_LONG).show()
+                setResult(RESULT_CANCELED)
+                resetRecordButton()
+            }
         } else {
             statusText.text = "Recording failed!"
-            Toast.makeText(this, "Failed to save audio", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Failed to save audio - no data recorded", Toast.LENGTH_LONG).show()
             setResult(RESULT_CANCELED)
+            resetRecordButton()
         }
 
         pcmFile?.delete()
 
         Handler(Looper.getMainLooper()).postDelayed({
-            resetRecordButton()
             if (!isFinishing) {
+                resetRecordButton()
                 finish()
             }
-        }, 2000)
+        }, 3000)
     }
 
     private fun convertPcmToWav() {
-        val pcmData = pcmFile?.readBytes() ?: return
+        val pcmData = pcmFile?.readBytes()
+        if (pcmData == null || pcmData.isEmpty()) {
+            Log.e(TAG, "PCM data is null or empty")
+            return
+        }
+
+        Log.d(TAG, "Converting PCM to WAV, PCM size: ${pcmData.size} bytes")
 
         val totalDataLen = pcmData.size
         val totalFileLen = totalDataLen + 36
         val byteRate = SAMPLE_RATE * 2
         val blockAlign = 2.toShort()
+        val bitsPerSample = 16
 
         val header = ByteArray(44)
 
@@ -315,7 +427,7 @@ class RecordingActivity : AppCompatActivity() {
         writeIntToByteArray(header, 24, SAMPLE_RATE)
         writeIntToByteArray(header, 28, byteRate)
         writeShortToByteArray(header, 32, blockAlign)
-        writeShortToByteArray(header, 34, 16)
+        writeShortToByteArray(header, 34, bitsPerSample)
 
         "data".toByteArray().copyInto(header, 36)
         writeIntToByteArray(header, 40, totalDataLen)
@@ -324,6 +436,8 @@ class RecordingActivity : AppCompatActivity() {
             fos.write(header)
             fos.write(pcmData)
         }
+
+        Log.d(TAG, "WAV file created successfully, size: ${wavFile?.length()} bytes")
     }
 
     private fun writeIntToByteArray(array: ByteArray, offset: Int, value: Int) {
@@ -343,11 +457,26 @@ class RecordingActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        Log.d(TAG, "onDestroy called")
         super.onDestroy()
         countDownTimer?.cancel()
         isRecording = false
         recordingThread?.interrupt()
-        try { audioRecord?.release() } catch (e: Exception) { e.printStackTrace() }
+        try {
+            recordingThread?.join(1000)
+        } catch (e: InterruptedException) {
+            Log.e(TAG, "Error waiting for thread to finish", e)
+        }
+        try {
+            audioRecord?.let {
+                if (it.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                    it.stop()
+                }
+                it.release()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error releasing AudioRecord in onDestroy", e)
+        }
         resetRecordButton()
     }
 
