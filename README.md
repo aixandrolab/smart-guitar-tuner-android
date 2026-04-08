@@ -1,4 +1,4 @@
-# Smart Guitar Tuner Android <sup>v0.1.0</sup>
+# Smart Guitar Tuner Android <sup>v0.1.1</sup>
 
 
 [![GitHub top language](https://img.shields.io/github/languages/top/aixandrolab/smart-guitar-tuner-android)](https://github.com/aixandrolab/smart-guitar-tuner-android)
