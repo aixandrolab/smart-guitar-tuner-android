@@ -37,6 +37,8 @@ class RecordingActivity : AppCompatActivity() {
     private lateinit var waveformCard: CardView
     private lateinit var recordingIndicator: View
 
+    private lateinit var stringInfoText: TextView
+
     private var countDownTimer: CountDownTimer? = null
     private var recordingThread: Thread? = null
     private var isRecording = false
@@ -80,9 +82,29 @@ class RecordingActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         waveformCard = findViewById(R.id.waveformCard)
         recordingIndicator = findViewById(R.id.recordingIndicator)
+        stringInfoText = findViewById(R.id.stringInfoText)
 
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        displayStringInfo()
+    }
+
+    private fun displayStringInfo() {
+        val stringNumber = stringIndex + 1
+        val stringName = when (stringNumber) {
+            1 -> "1st String"
+            2 -> "2nd String"
+            3 -> "3rd String"
+            4 -> "4th String"
+            5 -> "5th String"
+            6 -> "6th String"
+            else -> "String $stringNumber"
+        }
+
+        stringInfoText.text = "Recording: $stringName"
+
+        supportActionBar?.subtitle = "$tuningName Tuning - $stringName"
     }
 
     private fun setupListeners() {
@@ -137,7 +159,7 @@ class RecordingActivity : AppCompatActivity() {
     }
 
     private fun startCountdown() {
-        statusText.text = "Preparing..."
+        statusText.text = "Preparing to record ${getStringName()}..."
         statusText.visibility = View.VISIBLE
 
         countDownTimer = object : CountDownTimer(4000, 1000) {
@@ -157,6 +179,19 @@ class RecordingActivity : AppCompatActivity() {
                 startRecording()
             }
         }.start()
+    }
+
+    private fun getStringName(): String {
+        val stringNumber = stringIndex + 1
+        return when (stringNumber) {
+            1 -> "1st String"
+            2 -> "2nd String"
+            3 -> "3rd String"
+            4 -> "4th String"
+            5 -> "5th String"
+            6 -> "6th String"
+            else -> "string $stringNumber"
+        }
     }
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
@@ -179,7 +214,7 @@ class RecordingActivity : AppCompatActivity() {
 
             isRecording = true
             recordingSeconds = 0
-            statusText.text = "Recording... 0/6 sec"
+            statusText.text = "Recording ${getStringName()}... 0/6 sec"
             recordingIndicator.visibility = View.VISIBLE
 
             recordingThread = Thread {
@@ -191,7 +226,7 @@ class RecordingActivity : AppCompatActivity() {
                 override fun run() {
                     recordingSeconds++
                     if (recordingSeconds <= 6 && isRecording) {
-                        statusText.text = "Recording... $recordingSeconds/6 sec"
+                        statusText.text = "Recording ${getStringName()}... $recordingSeconds/6 sec"
                         updateWaveformLevel()
                         handler.postDelayed(this, 1000)
                     } else if (recordingSeconds > 6) {

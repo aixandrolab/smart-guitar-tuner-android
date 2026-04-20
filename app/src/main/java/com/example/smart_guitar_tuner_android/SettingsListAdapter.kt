@@ -58,10 +58,4 @@ class SettingsListAdapter(
 
         return view
     }
-
-    fun updateData(newList: List<String>) {
-        settingsList.clear()
-        settingsList.addAll(newList)
-        notifyDataSetChanged()
-    }
 }

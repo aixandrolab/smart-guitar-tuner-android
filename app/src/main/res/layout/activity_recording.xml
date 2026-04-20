@@ -23,6 +23,17 @@
         android:orientation="vertical"
         android:padding="24dp">
 
+        <TextView
+            android:id="@+id/stringInfoText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Recording: String 1"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
         <androidx.cardview.widget.CardView
             android:id="@+id/waveformCard"
             android:layout_width="match_parent"
